@@ -1,71 +1,45 @@
-from tf.data import Dataset
-from tf.image import (
-    decode_jpeg,
-    convert_image_dtype,
-    resize_images,
-    random_brightness,
-    random_saturation
-)
-import random
-import os
-import csv
-
+import tensorflow_datasets as tfds
+import tensorflow as tf
 
 class Process(object):
 
-    def __init__(self, dataDir, maskDir, batchSize, preFetch, imgSize,
-                 testRatio, maxDelta, lowerSat, upperSat):
-        self.dataDir = dataDir
-        self.batchSize = batchSize
-        self.preFetch = preFetch
-        self.imgSize = imgSize
-        self.testRatio = testRatio
-        self.maxDelta = maxDelta
-        self.lower = lowerSat
-        self.upper = upperSat
-        self.maskFiles = [filename for filename in os.listdir(maskDir) if os.isfile(filename)]
+    def __init__(self, batchSize, preFetch, imgSize):
+        self.batch_size = batchSize
+        self.pre_fetch = preFetch
+        self.img_size = imgSize
 
     def buildDataset(self):
-        inputs = []
-        outputs = []
-        with open(self.dataDir[1], 'r') as f:
-            csvReader = csv.reader(f, delimiter=',')
-            for row in csvReader:
-                inputs.append(self.dataDir[0] + row[0])
-                outputs.append(row[1])
-        data = zip(inputs, outputs)
-        random.shuffle(data)
-        inputs, outputs = zip(*data)
-        dataset = Dataset.from_tensor_slices((inputs, outputs))
-        dataset = dataset.map(self._parseData, num_parallel_calls=4)
-        dataset = dataset.map(self._preproces, num_parallel_calls=4)
-        dataset = dataset.batch(self.batchSize)
-        dataset = dataset.prefetch(self.preFetch)
-        testLen = int(len(inputs) * self.testRatio)
-        trainLen = len(inputs) - testLen
-        testDataset = dataset.take(testLen)
-        testDataset = testDataset.shuffle(testLen)
-        trainDataset = dataset.skip(testLen)
-        trainDataset = trainDataset.shuflle(trainLen)
-        return trainDataset, testDataset
+      dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
+      train_len = info.splits['train'].num_examples
+      steps_per_epoch = train_len // self.batch_size
+      train = dataset['train'].map(
+        self._load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE
+      )
+      test = dataset['test'].map(self._load_image_test)
+      return train, test
+    
+    def _normalize(self, input_image, input_mask):
+      input_image = tf.cast(input_image, tf.float32) / 255.0
+      input_mask -= 1
+      return input_image, input_mask
+    
+    @tf.function
+    def _load_image_train(self, datapoint):
+      input_image = tf.image.resize(datapoint['image'], (128, 128))
+      input_mask = tf.image.resize(datapoint['segmentation_mask'], (128, 128))
 
-    def _parseData(input, label):
-        image = tf.read_file(input)
-        image = decode_jpeg(image, channels=3)
-        image = convert_image_dtype(image, tf.float32)
-        if(input in self.maskFiles):
-            imageMask = tf.read_file(self.maskDir + input)
-            imageMask = decode_jpeg(imageMask, channels=3)
-            imageMask = convert_image_dtype(imageMask, tf.float32)
-            image = tf.math.add(image, imageMask)
-            oneTensor = tf.ones_like(image)
-            image = tf.math.subtract(image, oneTensor)
-            image = tf.clip_by_value(image, 0.0, 1.0)
-        image = resize_images(image, [self.imgSize, self.imgSize])
-        return image, label
+      if tf.random.uniform(()) > 0.5:
+        input_image = tf.image.flip_left_right(input_image)
+        input_mask = tf.image.flip_left_right(input_mask)
 
-    def _preprocess(input, label):
-        image = random_brightness(input, max_delta=self.maxDelta)
-        image = random_saturation(
-            input, lower=self.lowerSat, upper=self.upperSat)
-        image = tf.clip_by_value(image, 0.0, 1.0)
+        input_image, input_mask = self.normalize(input_image, input_mask)
+
+      return input_image, input_mask
+
+     def _load_image_test(self, datapoint):
+       input_image = tf.image.resize(datapoint['image'], (128, 128))
+       input_mask = tf.image.resize(datapoint['segmentation_mask'], (128, 128))
+
+       input_image, input_mask = self.normalize(input_image, input_mask)
+
+       return input_image, input_mask

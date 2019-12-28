@@ -9,7 +9,7 @@ class Process(object):
     self.pre_fetch = preFetch
     self.img_size = imgSize
 
-  def buildDataset(self):
+  def build_dataset(self):
     dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
     train_len = info.splits['train'].num_examples
     steps_per_epoch = train_len // self.batch_size
@@ -45,17 +45,21 @@ class Process(object):
 
     return input_image, input_mask
 
+  def _test(self):
+    train, test = self.build_dataset()
+    for img, mask in train.take(1):
+      plt.figure(figsize=(15, 15))
+      title = ['Input Image', 'True Mask']
+      plt.subplot(1, 2,1)
+      plt.title(title[0])
+      plt.imshow(tf.keras.preprocessing.image.array_to_img(img))
+      plt.axis('off')
+      plt.subplot(1, 2, 2)
+      plt.title(title[1])
+      plt.imshow(tf.keras.preprocessing.image.array_to_img(mask))
+      plt.axis('off')
+      plt.show()
+
+
 test_preprocess = Process(32, 2, 128)
-train, test = test_preprocess.buildDataset()
-for img, mask in train.take(1):
-  plt.figure(figsize=(15, 15))
-  title = ['Input Image', 'True Mask']
-  plt.subplot(1, 2,1)
-  plt.title(title[0])
-  plt.imshow(tf.keras.preprocessing.image.array_to_img(img))
-  plt.axis('off')
-  plt.subplot(1, 2, 2)
-  plt.title(title[1])
-  plt.imshow(tf.keras.preprocessing.image.array_to_img(mask))
-  plt.axis('off')
-  plt.show()
+test_preprocess._test()

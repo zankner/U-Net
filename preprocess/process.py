@@ -17,8 +17,18 @@ class Process(object):
       self._load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE
     )
     test = dataset['test'].map(self._load_image_test)
+    train = self._prepare(train, True)
+    test = self._prepare(test, False)
     return train, test
-  
+
+  def _prepare(self, dataset, train):
+    if train:
+      dataset = dataset.cache().shuffle(1000).batch(self.batch_size).repeat()
+      dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+    else:
+      dataset = dataset.batch(self.batch_size)
+    return dataset  
+
   def _normalize(self, input_image, input_mask):
     input_image = tf.cast(input_image, tf.float32) / 255.0
     input_mask -= 1
@@ -59,7 +69,3 @@ class Process(object):
       plt.imshow(tf.keras.preprocessing.image.array_to_img(mask))
       plt.axis('off')
       plt.show()
-
-
-test_preprocess = Process(32, 2, 128)
-test_preprocess._test()

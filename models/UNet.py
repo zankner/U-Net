@@ -34,7 +34,7 @@ class UNet(Model):
       up_step.append(Conv2D((2**(3-i))*16, 3, padding='same'))
       up_step.append(BatchNormalization())
       self.decoder.append(up_step)
-    self.out_conv = Conv2D(1, 1, activation='softmax')
+    self.out_conv = Conv2D(3, 1, activation='softmax')
 
 
   def call(self, x, training=False):

@@ -48,12 +48,13 @@ class Train(object):
 
     def _log(self, epoch):
         template = 'Epoch {}, Loss: {}, Acc: {}, Test Loss: {}, Test Acc: {}'
+        '''
         print(template.format(epoch + 1,
             self.train_loss.result(),
             self.train_accuracy.result() * 100,
             self.test_loss.result(),
             self.test_accuracy.result() * 100))
-
+        '''
     def _save(self):
         if int(self.ckpt.step) % 10 == 0:
             save_path = self.ckpt_manager().save()
@@ -78,6 +79,7 @@ class Train(object):
         for epoch in range(self.epochs):
             for inputs, labels in self.train_ds:
                 self._update(inputs, labels)
+                print('made it')
             for testInputs, testLabels in self.test_ds:
                 self._test(testInput, testLabels)
             self._log(epoch)

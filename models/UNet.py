@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.layers import (
-    Dense, Flatten, Conv2D, Conv2DTranspose, BatchNormalization
+    Dense, Flatten, Conv2D, Conv2DTranspose, 
+    BatchNormalization, concatenate, MaxPool2D
 )
 from tensorflow.keras import Model
 
@@ -8,27 +9,33 @@ from tensorflow.keras import Model
 class UNet(Model):
   def __init__(self, filters=16):
     super(UNet, self).__init__()
+    self.run_eagerly = False
     #Downsampling step
     self.encoder = []
     for i in range(4):
       ds_step = []
-      ds_step.append(Conv2D(2**i, 3, padding='same'))
-      ds_step.append(Conv2D(2**i, 3, padding='same'))
+      ds_step.append(Conv2D((2**i)*filters, 3, padding='same'))
+      ds_step.append(BatchNormalization())
+      ds_step.append(Conv2D((2**i)*filters, 3, padding='same'))
+      ds_step.append(BatchNormalization())
+      ds_step.append(MaxPool2D())
       self.encoder.append(ds_step)
-    self.encoder_bot_0 = Conv2D(filters*16, 3)
-    self.encoder_bot_1 = Conv2D(filters*16, 3)
-    
+    self.encoder_bot_0 = Conv2D(filters*16, 3, padding='same')
+    self.encoder_bot_1 = Conv2D(filters*16, 3, padding='same')
+    self.encoder_bot_batchnorm = BatchNormalization()
+   
     #Upsampling step
     self.decoder = []
     for i in range(4):
       up_step = []
-      up_step.append(Conv2DTranspose(2**(3-i), 3, 2, padding='same'))
-      up_step.append(Conv2D(2**(3-i), 3, padding='same'))
-      up_step.append(Conv2D(2**(3-i), 3, padding='same'))
+      up_step.append(Conv2DTranspose((2**(3-i))*16, 3, 2, padding='same'))
+      up_step.append(Conv2D((2**(3-i))*16, 3, padding='same'))
+      up_step.append(BatchNormalization())
+      up_step.append(Conv2D((2**(3-i))*16, 3, padding='same'))
+      up_step.append(BatchNormalization())
       self.decoder.append(up_step)
     self.out_conv = Conv2D(1, 1, activation='softmax')
 
-    self.batch_norm = BatchNormalization()
 
   def call(self, x, training=False):
     skip_connections = []
@@ -37,32 +44,35 @@ class UNet(Model):
     for ds_step in self.encoder:
       x = ds_step[0](x)
       if training:
-        x = self.batch_norm(x)
+        x = ds_step[1](x)
       x = tf.nn.relu(x)
-      x = ds_step[1](x)
+      x = ds_step[2](x)
       if training:
-        x = self.batch_norm(x)
+        x = ds_step[3](x)
       x = tf.nn.relu(x)
       skip_connections.append(x)
+      x = ds_step[4](x)
+      x = tf.nn.dropout(x, 0.1)
     x = self.encoder_bot_0(x)
     x = self.encoder_bot_1(x)
+    if training:
+        x = self.encoder_bot_batchnorm(x)
 
     #Upsampling
     skip_connections = reversed(skip_connections)
-    for up_step, skip in self.decoder, skip_connections:
+    for up_step, skip in zip(self.decoder, skip_connections):
       x = up_step[0](x)
-      x = tf.concat([x, skip])
+      x = concatenate([x, skip])
       if training:
-        x = tf.nn.dropout(x)
+        x = tf.nn.dropout(x, .1)
       x = up_step[1](x)
       if training:
-        x = self.batch_norm(x)
+        x = up_step[2](x)
       x = tf.nn.relu(x)
-      x = up_step[2](x)
+      x = up_step[3](x)
       if training:
-        x = self.batch_norm(x)
-      x = relu(x)
-
+        x = up_step[4](x)
+      x = tf.nn.relu(x)
     x = self.out_conv(x)
 
     return x

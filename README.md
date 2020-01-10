@@ -1,1 +1,3 @@
-# Building UNet for semantic segmentation
+# U-Net
+
+Building U-Net for image segmentation

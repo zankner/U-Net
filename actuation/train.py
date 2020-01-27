@@ -12,10 +12,9 @@ from preprocess.process import Process
 
 class Train(object):
     def __init__(self, params):
-        self.lr = params.lr
         self.epochs = params.epochs
         self.loss_object = SparseCategoricalCrossentropy()
-        self.optimizer = Adam()
+        self.optimizer = Adam(params.lr)
         self.train_loss = Mean(name='train_loss')
         self.train_accuracy = SparseCategoricalAccuracy(name='train_acc')
         self.test_loss = Mean(name='test_loss')

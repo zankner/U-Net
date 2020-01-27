@@ -15,24 +15,24 @@ class UNet(Model):
     self.encoder = []
     for i in range(4):
       ds_step = []
-      ds_step.append(Conv2D((2**i)*filters, 3, padding='same', kernel_regularizer=l1_l2(0.05, 0.05)))
+      ds_step.append(Conv2D((2**i)*filters, 3, padding='same', kernel_regularizer=l1_l2(0.1, 0.1)))
       ds_step.append(BatchNormalization())
-      ds_step.append(Conv2D((2**i)*filters, 3, padding='same', kernel_regularizer=l1_l2(0.05, 0.05)))
+      ds_step.append(Conv2D((2**i)*filters, 3, padding='same', kernel_regularizer=l1_l2(0.1, 0.1)))
       ds_step.append(BatchNormalization())
       ds_step.append(MaxPool2D())
       self.encoder.append(ds_step)
-    self.encoder_bot_0 = Conv2D(filters*16, 3, padding='same', kernel_regularizer=l1_l2(0.05, 0.05))
-    self.encoder_bot_1 = Conv2D(filters*16, 3, padding='same', kernel_regularizer=l1_l2(0.05, 0.05))
+    self.encoder_bot_0 = Conv2D(filters*16, 3, padding='same', kernel_regularizer=l1_l2(0.1, 0.1))
+    self.encoder_bot_1 = Conv2D(filters*16, 3, padding='same', kernel_regularizer=l1_l2(0.1, 0.1))
     self.encoder_bot_batchnorm = BatchNormalization()
    
     #Upsampling step
     self.decoder = []
     for i in range(4):
       up_step = []
-      up_step.append(Conv2DTranspose((2**(3-i))*16, 3, 2, padding='same', kernel_regularizer=l1_l2(0.05, 0.05)))
-      up_step.append(Conv2D((2**(3-i))*16, 3, padding='same', kernel_regularizer=l1_l2(0.05, 0.05)))
+      up_step.append(Conv2DTranspose((2**(3-i))*16, 3, 2, padding='same', kernel_regularizer=l1_l2(0.1, 0.1)))
+      up_step.append(Conv2D((2**(3-i))*16, 3, padding='same', kernel_regularizer=l1_l2(0.1, 0.1)))
       up_step.append(BatchNormalization())
-      up_step.append(Conv2D((2**(3-i))*16, 3, padding='same', kernel_regularizer=l1_l2(0.05, 0.05)))
+      up_step.append(Conv2D((2**(3-i))*16, 3, padding='same', kernel_regularizer=l1_l2(0.1, 0.1)))
       up_step.append(BatchNormalization())
       self.decoder.append(up_step)
     self.out_conv = Conv2D(3, 1, activation='softmax')

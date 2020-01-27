@@ -41,7 +41,7 @@ class Train(object):
 
     @tf.function
     def _test(self, inputs, labels):
-        predictions = self.model(labels)
+        predictions = self.model(inputs)
         loss = self.loss_object(labels, predictions)
 
         self.test_loss(loss)
@@ -55,9 +55,9 @@ class Train(object):
             self.test_loss.result(),
             self.test_accuracy.result() * 100))
 
-    def _save(self):
-        if int(self.ckpt.step) % 10 == 0:
-            save_path = self.ckpt_manager().save()
+    def _save(self, verbose=False):
+        save_path = self.ckpt_manager.save()
+        if verbose:
             ckptLog = f"Saved checkpoint for step {int(self.ckpt.step)}: {save_path}"
             print(ckptLog)
 
@@ -80,9 +80,9 @@ class Train(object):
             for inputs, labels in self.train_ds:
                 self._update(inputs, labels)
             for testInputs, testLabels in self.test_ds:
-                self._test(testInput, testLabels)
+                self._test(testInputs, testLabels)
             self._log(epoch)
-            self._save()
+            self._save(True)
             self._reset()
 
 

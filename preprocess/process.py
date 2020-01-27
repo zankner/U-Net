@@ -10,7 +10,7 @@ class Process(object):
     self.img_size = imgSize
 
   def build_dataset(self):
-    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
+    dataset, info = tfds.load('oxford_iiit_pet:3.1.0', with_info=True)
     train_len = info.splits['train'].num_examples
     steps_per_epoch = train_len // self.batch_size
     train = dataset['train'].map(
@@ -23,7 +23,7 @@ class Process(object):
 
   def _prepare(self, dataset, train):
     if train:
-      dataset = dataset.cache().shuffle(1000).batch(self.batch_size).repeat()
+      dataset = dataset.cache().shuffle(3680,reshuffle_each_iteration=True).batch(self.batch_size)
       dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     else:
       dataset = dataset.batch(self.batch_size)
@@ -41,7 +41,9 @@ class Process(object):
 
     if tf.random.uniform(()) > 0.5:
       input_image = tf.image.flip_left_right(input_image)
+      input_image = tf.image.flip_up_down(input_image)
       input_mask = tf.image.flip_left_right(input_mask)
+      input_mask = tf.image.flip_up_down(input_mask)
 
     input_image, input_mask = self._normalize(input_image, input_mask)
 

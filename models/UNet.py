@@ -46,16 +46,16 @@ class UNet(Model):
       x = ds_step[0](x)
       if training:
         x = ds_step[1](x)
-        Dropout(.7)(x)
+        x = Dropout(.6)(x)
       x = tf.nn.relu(x)
       x = ds_step[2](x)
       if training:
         x = ds_step[3](x)
-        Dropout(.7)(x)
+        x = Dropout(.6)(x)
       x = tf.nn.relu(x)
       skip_connections.append(x)
       x = ds_step[4](x)
-      x = tf.nn.dropout(x, 0.7)
+      x = Dropout(.6)(x)
     x = self.encoder_bot_0(x)
     x = self.encoder_bot_1(x)
     if training:
@@ -67,16 +67,16 @@ class UNet(Model):
       x = up_step[0](x)
       x = concatenate([x, skip])
       if training:
-        x = tf.nn.dropout(x, .7)
+        x = Dropout(.6)(x)
       x = up_step[1](x)
       if training:
         x = up_step[2](x)
-        Dropout(.7)(x)
+        x = Dropout(.6)(x)
       x = tf.nn.relu(x)
       x = up_step[3](x)
       if training:
         x = up_step[4](x)
-        Dropout(.7)(x)
+        x = Dropout(.6)(x)
       x = tf.nn.relu(x)
     x = self.out_conv(x)
 

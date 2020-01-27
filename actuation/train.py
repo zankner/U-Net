@@ -25,7 +25,7 @@ class Train(object):
         self.train_ds, self.test_ds = preprocessor.build_dataset()
         self.ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=self.optimizer,
                 net=self.model)
-        self.ckpt_manager = tf.train.CheckpointManager(self.ckpt, f'checkpoints{params.ckpt_dir}',
+        self.ckpt_manager = tf.train.CheckpointManager(self.ckpt, f'checkpoints/{params.ckpt_dir}',
                 max_to_keep=3)
 
     @tf.function
@@ -87,7 +87,8 @@ class Train(object):
 
 
 if __name__ == '__main__':
-    numCkpts = len([folder for folder in os.listdir('./checkpoints') if os.path.isdir(folder)])
+    numCkpts = len([folder for folder in os.listdir('./checkpoints') if 
+        os.path.isdir(os.path.join('checkpoints',folder))])
     parser= argparse.ArgumentParser()
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--epochs', default=1000, type=int)

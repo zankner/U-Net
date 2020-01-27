@@ -62,9 +62,9 @@ class Train(object):
             print(ckptLog)
 
     def _restore(self):
-        self.ckpt.restore(self.ckpt_manager.latest_checkpoint)
+        self.ckpt.restore(self.ckpt_manager.latest_checkpoint).expect_partial()
         if self.ckpt_manager.latest_checkpoint:
-            print(f"Restored from {manager.latest_checkpoint}")
+            print(f"Restored from {self.ckpt_manager.latest_checkpoint}")
         else:
             print("Initializing from scratch.")
 
@@ -82,7 +82,7 @@ class Train(object):
             for testInputs, testLabels in self.test_ds:
                 self._test(testInputs, testLabels)
             self._log(epoch)
-            self._save(True)
+            self._save()
             self._reset()
 
 

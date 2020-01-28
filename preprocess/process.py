@@ -8,32 +8,37 @@ class Process(object):
     self.batch_size = batchSize
     self.pre_fetch = preFetch
     self.img_size = imgSize
+    self.train_pad = 1000
 
   def build_dataset(self):
-    dataset, info = tfds.load('oxford_iiit_pet:3.1.0', with_info=True)
+    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
     train_len = info.splits['train'].num_examples
     steps_per_epoch = train_len // self.batch_size
-    train = dataset['train'].map(
+    pure_train = dataset['train']
+    train_take = dataset['test'].take(self.train_pad)
+    train = pure_train.concatenate(train_take)
+    test = dataset['test'].skip(self.train_pad)
+    train = train.map(
       self._load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE
     )
-    test = dataset['test'].map(self._load_image_test)
+    test = test.map(self._load_image_test)
     train = self._prepare(train, True)
     test = self._prepare(test, False)
     return train, test
 
   def _prepare(self, dataset, train):
     if train:
-      dataset = dataset.cache().shuffle(3680,reshuffle_each_iteration=True).batch(self.batch_size)
+      dataset = dataset.cache().shuffle(3680 + self.train_pad,reshuffle_each_iteration=True).batch(self.batch_size)
       dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
     else:
       dataset = dataset.batch(self.batch_size)
-    return dataset  
+    return dataset
 
   def _normalize(self, input_image, input_mask):
     input_image = tf.cast(input_image, tf.float32) / 255.0
     input_mask -= 1
     return input_image, input_mask
-  
+
   @tf.function
   def _load_image_train(self, datapoint):
     input_image = tf.image.resize(datapoint['image'], (128, 128))

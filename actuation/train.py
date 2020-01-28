@@ -12,10 +12,9 @@ from preprocess.process import Process
 
 class Train(object):
     def __init__(self, params):
-        self.lr = params.lr
         self.epochs = params.epochs
         self.loss_object = SparseCategoricalCrossentropy()
-        self.optimizer = Adam()
+        self.optimizer = Adam(params.lr)
         self.train_loss = Mean(name='train_loss')
         self.train_accuracy = SparseCategoricalAccuracy(name='train_acc')
         self.test_loss = Mean(name='test_loss')
@@ -25,7 +24,7 @@ class Train(object):
         self.train_ds, self.test_ds = preprocessor.build_dataset()
         self.ckpt = tf.train.Checkpoint(step=tf.Variable(1), optimizer=self.optimizer,
                 net=self.model)
-        self.ckpt_manager = tf.train.CheckpointManager(self.ckpt, f'checkpoints{params.ckpt_dir}',
+        self.ckpt_manager = tf.train.CheckpointManager(self.ckpt, f'checkpoints/{params.ckpt_dir}',
                 max_to_keep=3)
 
     @tf.function
@@ -62,9 +61,9 @@ class Train(object):
             print(ckptLog)
 
     def _restore(self):
-        self.ckpt.restore(self.ckpt_manager.latest_checkpoint)
+        self.ckpt.restore(self.ckpt_manager.latest_checkpoint).expect_partial()
         if self.ckpt_manager.latest_checkpoint:
-            print(f"Restored from {manager.latest_checkpoint}")
+            print(f"Restored from {self.ckpt_manager.latest_checkpoint}")
         else:
             print("Initializing from scratch.")
 
@@ -82,12 +81,13 @@ class Train(object):
             for testInputs, testLabels in self.test_ds:
                 self._test(testInputs, testLabels)
             self._log(epoch)
-            self._save(True)
+            self._save()
             self._reset()
 
 
 if __name__ == '__main__':
-    numCkpts = len([folder for folder in os.listdir('./checkpoints') if os.path.isdir(folder)])
+    numCkpts = len([folder for folder in os.listdir('./checkpoints') if 
+        os.path.isdir(os.path.join('checkpoints',folder))])
     parser= argparse.ArgumentParser()
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--epochs', default=1000, type=int)

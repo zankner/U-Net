@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', default=1000, type=int)
     parser.add_argument('--ckpt_dir', default=str(numCkpts), type=str)
     parser.add_argument('--dataDir', default='./data/train', type=str)
-    parser.add_argument('--batchSize', default=32, type=int)
+    parser.add_argument('--batchSize', default=64, type=int)
     parser.add_argument('--preFetch', default=1, type=int)
     parser.add_argument('--imgSize', default=128, type=int)
     parser.add_argument('--testRatio', default=0.1, type=float)

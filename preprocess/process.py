@@ -11,7 +11,7 @@ class Process(object):
     self.train_pad = 1000
 
   def build_dataset(self):
-    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
+    dataset, info = tfds.load('oxford_iiit_pet:3.1.0', with_info=True)
     train_len = info.splits['train'].num_examples
     steps_per_epoch = train_len // self.batch_size
     pure_train = dataset['train']

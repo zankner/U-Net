@@ -9,9 +9,10 @@ class Process(object):
     self.pre_fetch = preFetch
     self.img_size = imgSize
     self.train_pad = 1000
+    self.augment_data_buffer = []
 
   def build_dataset(self):
-    dataset, info = tfds.load('oxford_iiit_pet:3.1.0', with_info=True)
+    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
     train_len = info.splits['train'].num_examples
     steps_per_epoch = train_len // self.batch_size
     pure_train = dataset['train']
@@ -25,6 +26,13 @@ class Process(object):
     train = self._prepare(train, True)
     test = self._prepare(test, False)
     return train, test
+
+  def build_demo_dataset(self):
+    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
+    test = dataset['train'].shuffle(3000).take(1)
+    test = test.map(self._load_image_test)
+    test = self._prepare(test, False)
+    return test
 
   def _prepare(self, dataset, train):
     if train:

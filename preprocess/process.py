@@ -1,6 +1,7 @@
 import tensorflow_datasets as tfds
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from random import randint, random
 
 class Process(object):
 
@@ -8,11 +9,10 @@ class Process(object):
     self.batch_size = batchSize
     self.pre_fetch = preFetch
     self.img_size = imgSize
-    self.train_pad = 1000
-    self.augment_data_buffer = []
+    self.train_pad = 2000
 
   def build_dataset(self):
-    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
+    dataset, info = tfds.load('oxford_iiit_pet:3.1.0', with_info=True)
     train_len = info.splits['train'].num_examples
     steps_per_epoch = train_len // self.batch_size
     pure_train = dataset['train']
@@ -26,13 +26,6 @@ class Process(object):
     train = self._prepare(train, True)
     test = self._prepare(test, False)
     return train, test
-
-  def build_demo_dataset(self):
-    dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
-    test = dataset['train'].shuffle(3000).take(1)
-    test = test.map(self._load_image_test)
-    test = self._prepare(test, False)
-    return test
 
   def _prepare(self, dataset, train):
     if train:
@@ -53,8 +46,16 @@ class Process(object):
     input_mask = tf.image.resize(datapoint['segmentation_mask'], (128, 128))
 
     if tf.random.uniform(()) > 0.5:
+      rotate_factor = randint(0, 4)
+      brightness_factor = random() 
+      contrast_factor = random() * 3
+      saturation_factor = random()
       input_image = tf.image.flip_left_right(input_image)
       input_image = tf.image.flip_up_down(input_image)
+      input_image = tf.image.rot90(input_image, rotate_factor)
+      input_image = tf.image.adjust_brightness(input_image, brightness_factor)
+      input_image = tf.image.adjust_contrast(input_image, contrast_factor)
+      input_image = tf.image.adjust_saturation(input_image, saturation_factor)
       input_mask = tf.image.flip_left_right(input_mask)
       input_mask = tf.image.flip_up_down(input_mask)
 

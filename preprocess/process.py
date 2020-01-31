@@ -1,6 +1,7 @@
 import tensorflow_datasets as tfds
 import tensorflow as tf
 import matplotlib.pyplot as plt
+from random import randint, random
 
 class Process(object):
 
@@ -8,8 +9,8 @@ class Process(object):
     self.batch_size = batchSize
     self.pre_fetch = preFetch
     self.img_size = imgSize
-    self.train_pad = 1000
     self.augment_data_buffer = []
+    self.train_pad = 2000
 
   def build_dataset(self):
     dataset, info = tfds.load('oxford_iiit_pet:3.0.0', with_info=True)
@@ -53,10 +54,25 @@ class Process(object):
     input_mask = tf.image.resize(datapoint['segmentation_mask'], (128, 128))
 
     if tf.random.uniform(()) > 0.5:
-      input_image = tf.image.flip_left_right(input_image)
-      input_image = tf.image.flip_up_down(input_image)
-      input_mask = tf.image.flip_left_right(input_mask)
-      input_mask = tf.image.flip_up_down(input_mask)
+      augment_input_image = input_image
+      augment_input_mask = input_mask
+      rotate_factor = randint(0, 4)
+      brightness_factor = random() 
+      contrast_factor = random() * 3
+      saturation_factor = random()
+      augment_input_image = tf.image.flip_left_right(augment_input_image)
+      augment_input_image = tf.image.flip_up_down(augment_input_image)
+      augment_input_image = tf.image.rot90(augment_input_image, rotate_factor)
+      augment_input_image = tf.image.adjust_brightness(augment_input_image, brightness_factor)
+      augment_input_image = tf.image.adjust_contrast(augment_input_image, contrast_factor)
+      augment_input_image = tf.image.adjust_saturation(augment_input_image, saturation_factor)
+      augment_input_mask = tf.image.flip_left_right(augment_input_mask)
+      augment_input_mask = tf.image.flip_up_down(augment_input_mask)
+      augment_input_mask = tf.image.rot90(augment_input_mask, rotate_factor)
+
+      self.augment_data_buffer.append([
+        augment_input_image, augment_input_mask
+      ])
 
     input_image, input_mask = self._normalize(input_image, input_mask)
 
